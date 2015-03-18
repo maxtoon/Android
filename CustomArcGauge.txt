@@ -1,0 +1,224 @@
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.util.AttributeSet;
+import android.view.View;
+
+/**
+ * Created by Max Mattoon on 3/1/15.
+ *
+ * To do an evenly spaced tic increment on an ellipse, I would need to calculate the arc segment length using calculus. It is a fairly
+ * involved process. I choose a more straight forward method, largely because this will be the legend on a curved gauge and the important
+ * measurement indications all take place on either end of the arc.
+ * These ArcBar tic marks are not EXACTLY equidistant or perpendicular to the arc tangent;
+ * but perfectly functional enough for a gauge graphic and without the overhead of calculus functions
+ */
+public class CrossLevelArc extends View {
+
+    private static final String tag = "CrossLevel Arc :";
+
+    //State
+    private double thetaMin = 30;              //starting angle for ArcBar display
+    private double thetaMax = 150;             //max angle for ArcBar display
+    private int meterWidth = 20;            //width of ArcBar color display
+    private int meterLeftLimit = 350;
+    private int meterUpperLimit = 100;
+    private int meterRightLimit = 850;
+    private int meterLowerLimit = 220;
+    private int legendPadValue = 10;        //to shift legend arc to top; make smaller to move down
+
+    private Paint mArcPaintPrimary, mArcPaintLegend;
+    private RectF rectF, rectL;
+
+    private float[] ticMarks;               //array to store (x,y) tick mark pairs
+    private int ticMarkIndex = 0;           //Index for ticMarks, initialized to 0
+    private double degreeRange[] = new double[] {30.0, 90.0, 150.0}; //the values that the tic marks are longer than rest; first and last are thetaMin and thetaMax values
+    private float ticMinorLength = 10;             //the delta length of minor tic mark
+    private float ticMajorLength = 20;             //the delta length of major tic mark
+
+    //Graphics
+
+
+
+
+    //Constructors
+
+    public CrossLevelArc(Context context){
+
+        super(context);
+        commonSetup();
+    }
+
+    public CrossLevelArc(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+        commonSetup();
+    }
+
+
+    public CrossLevelArc(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        commonSetup();
+    }
+
+
+
+
+private void commonSetup(){
+
+    mArcPaintPrimary = new Paint() {
+        {
+            rectF = new RectF(meterLeftLimit,meterUpperLimit,meterRightLimit,meterLowerLimit);
+            setDither(true);
+            setStyle(Style.STROKE);
+            setStrokeCap(Cap.BUTT);
+            setStrokeJoin(Join.BEVEL);
+            setAntiAlias(true);
+            setStrokeWidth(meterWidth);
+        }
+    };
+    mArcPaintLegend = new Paint() {
+        {
+            rectL = new RectF(meterLeftLimit,meterUpperLimit-legendPadValue,meterRightLimit,meterLowerLimit-legendPadValue);//the boundary for the legend arc, shifted by legendPadValue
+            setDither(true);
+            setStyle(Style.STROKE);
+            setStrokeCap(Cap.BUTT);
+            setStrokeJoin(Join.BEVEL);
+            setAntiAlias(true);
+            setStrokeWidth(2);
+            setColor(Color.WHITE);
+
+        }
+    };
+}
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        mArcPaintPrimary.setColor(Color.RED);
+        canvas.drawArc(rectF, 210, 120,false,mArcPaintPrimary );
+        mArcPaintPrimary.setColor(Color.GREEN);
+        canvas.drawArc(rectF, 260, 20, false,mArcPaintPrimary);
+        makeLegend(canvas);
+
+    }
+    private boolean checkDegreeRange(double degree){
+        boolean flag = false;
+        for (int i = 0; i < degreeRange.length; i++){
+           if (degreeRange[i] == degree) {
+                            flag= true;
+                        }
+
+        }
+            return flag;
+    }
+
+
+
+
+
+
+    private void calcLegendX(double degrees) {
+        /*
+        A conversion from a parametric ellipse equation with
+        polar coordinates to cartesian coordinates, passed back as a corrected absolute x value
+        The length of the x-major and y-minor axis, the center of the axises and angle are parameters.
+
+           x coord = length of x-axis(cosine(passed in angle)), angle reference is zero degrees
+           at 3:00, increasing counter-clockwise.
+
+         */
+
+        double degree;
+        degree = degrees; //passed in degrees, NOT in radians
+        float centerX = rectL.centerX();
+        float axisLengthX;
+        float originX, deltaX;
+
+        axisLengthX = (rectL.right - rectL.left);
+        float x = (float) Math.cos(Math.toRadians(degree)); //casts - Math requires double, cos needs radians,axisLengthX returns float
+        originX = (centerX + (x * (axisLengthX / 2)));//half the axis length travel from center origin
+        ticMarks[ticMarkIndex] = originX;         //insert first origin X value in ticMarks array
+        ticMarkIndex++;                         //increment index ticMarkIndex
+        if (checkDegreeRange(degree)) {
+
+            deltaX = originX+(ticMajorLength * (float) (Math.cos(Math.toRadians(degree))));
+            }
+        else {
+            deltaX = originX+(ticMinorLength * (float) (Math.cos(Math.toRadians(degree))));
+             }
+        int temp = ticMarkIndex+1;
+        ticMarks[temp] = deltaX;         //insert delta X value in ticMarks array AHEAD of origin Y data. ticMarkIndex NOT INCREMENTED!!
+
+    }
+
+
+
+    private void calcLegendY(double degrees)
+    {
+        /*
+        A conversion from a parametric ellipse equation with
+        polar coordinates to cartesian coordinates, passed back as a corrected absolute y value
+        The length of the x-major and y-minor axis, the center of the axises and angle are parameters.
+
+           y coord = length of y-axis(sine(passed in angle)), angle reference is zero degrees
+           at 3:00, increasing counter-clockwise.
+
+         */
+
+        double degree;
+        degree = degrees; //passed in degrees, NOT in radians
+        float centerY = rectL.centerY();
+        float axisLengthY;
+        float originY, deltaY;
+
+        axisLengthY = (rectL.bottom-rectL.top);
+        float y = (float)Math.sin(Math.toRadians(degree)); //casts - Math requires double, sin needs radians, axisLengthY returns float
+        originY = ( centerY-(y * (axisLengthY/2)));// half the axis length travel from center origin
+        ticMarks[ticMarkIndex]=originY;         //insert first origin X value in ticMarks array
+        ticMarkIndex++;                         //increment index ticMarkIndex
+        if (checkDegreeRange(degree)){
+
+            deltaY = originY-(ticMajorLength*(float)(Math.sin(Math.toRadians(degree))));
+        }
+        else{
+            deltaY =originY-(ticMinorLength*(float)(Math.sin(Math.toRadians(degree))));
+        }
+        int temp2 = ticMarkIndex+1;
+        ticMarks[temp2]=deltaY;         //insert delta Y value in ticMarks array AHEAD of origin X data. ticMarkIndex NOT INCREMENTED!!
+        ticMarkIndex = ticMarkIndex+2; //jump over two inserted AHEAD values
+
+
+
+    }
+
+
+
+
+
+    private void makeLegend(Canvas canvas){
+        ticMarkIndex = 0;
+        ticMarks = new float[52];                                       //tic mark data; thirteen entries, times two (x,y) pairs for each entry
+        mArcPaintPrimary.setStyle(Paint.Style.STROKE);
+        canvas.drawArc(rectL, 210, 120,false,mArcPaintLegend );
+
+        double theta;
+        for (theta = thetaMin; theta <= thetaMax; theta = theta + 10)//create tic mark data every 10 degrees within the range 30 - 150 degrees
+            {
+                calcLegendX(theta);
+                calcLegendY(theta);
+
+            }
+        canvas.drawLines(ticMarks, mArcPaintLegend);                    //draw all tic marks with ticMarks array data
+
+    }
+
+
+    private void initArcBar() {
+
+
+    }
+
+}

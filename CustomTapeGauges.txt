@@ -1,0 +1,218 @@
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.util.AttributeSet;
+import android.view.View;
+
+
+/**
+ * Created by chrismatton on 3/1/15.
+ */
+public class HorizontalGaugeTape extends View{
+
+    private static final String tag = "HorizontalGaugeTape :";
+
+    //State
+
+    private int meterWidth = 15;            //width of Horizontal Gauge Tape color display
+    private int meterLeftLimit = 350;
+    private int meterUpperLimit = 100;
+    private int meterRightLimit = 850;
+    private int meterLowerLimit = 220;
+
+    private Paint mTapePaintPrimary, mTapePaintLegend;
+
+    private float[] ticMarks;               //array to store (x,y) tick mark pairs
+    private int ticMarkIndex = 0;           //Index for ticMarks, initialized to 0
+    private float ticMinorLength = 10;             //the delta length of minor tic mark
+    private float ticMajorLength = 20;             //the delta length of major tic mark
+    private int   numberOfTics  =   17;
+    //Graphics
+
+
+
+
+    //Constructors
+
+    public HorizontalGaugeTape(Context context){
+
+        super(context);
+        commonSetup();
+    }
+
+    public HorizontalGaugeTape(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+        commonSetup();
+    }
+
+
+    public HorizontalGaugeTape(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        commonSetup();
+    }
+
+
+
+
+    private void commonSetup(){
+
+        mTapePaintPrimary = new Paint() {
+            {
+
+                setDither(true);
+                setStyle(Style.STROKE);
+                setStrokeJoin(Join.MITER);
+                setStrokeCap(Cap.SQUARE);
+                setAntiAlias(true);
+                setStrokeWidth(meterWidth);
+                setColor(Color.RED);
+            }
+        };
+        mTapePaintLegend = new Paint() {
+            {
+
+                setDither(true);
+                setStyle(Style.STROKE);
+                setStrokeCap(Cap.BUTT);
+                setStrokeJoin(Join.BEVEL);
+                setAntiAlias(true);
+                setStrokeWidth(2);
+                setColor(Color.WHITE);
+
+            }
+        };
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        //RectF shape = new RectF(getLeft(),getTop(),getRight(),getBottom());
+        //canvas.drawRect(shape, mArcPaintLegend);
+        //canvas.drawRect(0, 0, 438, 298, mArcPaintLegend);//max view size
+
+        //Top Frame Setup
+        canvas.drawRect(0, 10, 438, 140, mTapePaintLegend);//Top Frame outline
+
+        //Top gauge
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(10, 20, 150, 25, mTapePaintPrimary);//upper tape gauge
+        mTapePaintPrimary.setColor(Color.GREEN);
+        canvas.drawRect(150, 20, 300, 25, mTapePaintPrimary);//upper tape gauge
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(300, 20, 430, 25, mTapePaintPrimary);//upper tape gauge
+
+
+        //bottom gauge
+        mTapePaintPrimary.setColor(Color.WHITE);
+        canvas.drawRect(10, 125, 200, 130 , mTapePaintPrimary);//lower tape gauge
+        mTapePaintPrimary.setColor(Color.GREEN);
+        canvas.drawRect(200, 125, 300, 130, mTapePaintPrimary);//lower tape gauge
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(300, 125, 430, 130, mTapePaintPrimary);//lower tape gauge
+        makeLegend(canvas, 1);                         //draw legend #1
+
+
+
+
+        //Bottom Frame Setup
+        canvas.drawRect(0, 160, 438, 290, mTapePaintLegend);//Bottom Frame outline
+
+        //Top gauge
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(10, 170, 50, 175, mTapePaintPrimary);//upper tape gauge
+        mTapePaintPrimary.setColor(Color.GREEN);
+        canvas.drawRect(50, 170, 250, 175, mTapePaintPrimary);//upper tape gauge
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(175, 170, 430, 175, mTapePaintPrimary);//upper tape gauge
+
+
+        //bottom gauge 1
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(10,255, 100,260 , mTapePaintPrimary);//top lower tape gauge
+        mTapePaintPrimary.setColor(Color.GREEN);
+        canvas.drawRect(100, 255, 250, 260, mTapePaintPrimary);//top lower tape gauge
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(250, 255, 430, 260 , mTapePaintPrimary);//top lower tape gauge
+
+
+        //bottom gauge 2
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(10, 278, 100, 283 , mTapePaintPrimary);//bottom lower tape gauge
+        mTapePaintPrimary.setColor(Color.GREEN);
+        canvas.drawRect(100, 278, 300, 283, mTapePaintPrimary);//bottom lower tape gauge
+        mTapePaintPrimary.setColor(Color.RED);
+        canvas.drawRect(300, 278, 430, 283 , mTapePaintPrimary);//bottom lower tape gauge
+
+        makeLegend(canvas, 2);                         //draw legend #2
+
+    }
+
+
+
+    private void createTicMarks(int left, int xValue, int right, boolean upright, Canvas canvas){
+        int nextX = 0;
+        float ticLength =0;
+        ticMarkIndex = 0;
+        ticMarks = new float[68];                                      //tic mark data 17 * 4; seventeen entries, times two (x,y) pairs for each entry
+        int num = (right-left)/numberOfTics;
+        nextX = left+num;
+
+        for (int i=0; i<numberOfTics;i++){
+
+                ticMarks[ticMarkIndex]=nextX;
+                ticMarkIndex = ticMarkIndex+1;
+                ticMarks[ticMarkIndex]=xValue;
+                ticMarkIndex = ticMarkIndex+1;
+                ticMarks[ticMarkIndex]=nextX;
+                ticMarkIndex = ticMarkIndex+1;
+                if ((i==0) || (i % 4 == 0)){
+                    ticLength = ticMajorLength;
+                }
+                else{
+                    ticLength = ticMinorLength;
+                }
+                if (upright) {
+                    ticMarks[ticMarkIndex]=xValue-ticLength;}
+                else {
+                    ticMarks[ticMarkIndex]=xValue+ticLength;}
+                ticMarkIndex = ticMarkIndex+1;
+                nextX = nextX + num;
+            }
+
+        canvas.drawLines(ticMarks,mTapePaintLegend);
+
+    }
+
+
+    private void makeLegend(Canvas canvas, int select){
+
+        if (select==1){
+            mTapePaintLegend.setStrokeWidth(1);
+            canvas.drawRect(2, 32, 436, 118 , mTapePaintLegend);//upper tape gauge legend box
+            createTicMarks(2, 32, 436, false, canvas);      // left, xValue(upper or lower), right ,false = downward pointing tic marks
+            createTicMarks(2, 118, 436, true, canvas);      // left, xValue(upper or lower), right, True = up right pointing tic marks
+        }
+
+        else {
+            mTapePaintLegend.setStrokeWidth(1);
+            canvas.drawRect(2, 183, 436, 248 , mTapePaintLegend);//lower tape gauge legend box
+            createTicMarks(2, 183, 436, false, canvas);      // left, xValue(upper or lower), right ,false = downward pointing tic marks
+            createTicMarks(2, 248, 436, true, canvas);      // left, xValue(upper or lower), right, True = up right pointing tic marks
+
+
+        }
+
+
+        //canvas.drawLines(rectL, 210, 120,false,mArcPaintLegend );
+
+
+
+
+
+    }
+
+
+
+}

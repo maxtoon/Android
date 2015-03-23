@@ -1,0 +1,157 @@
+Managing Radio Button Groups - standard and custom
+
+
+
+public class ConfigurationFragment extends Fragment {
+    private String[] arraySpinner;
+
+
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        View v = inflater.inflate(R.layout.fragment_configuration, container, false);
+        //Added by Max for Saved Instance State
+
+
+
+        //Added new master button group   Max Mattoon
+
+        RadioButton crossLevelOn, gaugeOn, alignmentOn;
+
+        crossLevelOn = (RadioButton) v.findViewById(R.id.btnCrosslevel);
+        gaugeOn = (RadioButton) v.findViewById(R.id.btnGauge);
+        alignmentOn = (RadioButton) v.findViewById(R.id.bntAlignment);
+        //New RadioGroup custom object
+        GRadioGroup gr = new GRadioGroup(crossLevelOn, gaugeOn, alignmentOn);
+
+        //The three Configuration subgroups
+        RadioGroup rAlignGroup = ((RadioGroup) v.findViewById(R.id.radioGroupAlignment));
+        RadioGroup rGaugeGroup = ((RadioGroup) v.findViewById(R.id.radioGroupGauge));
+        RadioGroup rCrossLevelGroup = ((RadioGroup) v.findViewById(R.id.radioGroupCrosslevel));
+
+        rAlignGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener()
+        {
+            public void onCheckedChanged(RadioGroup rGroup, int checkedID)
+            {
+                //The radio button that has changed state
+                RadioButton checkedRadioButton = (RadioButton)rGroup.findViewById(checkedID);
+                //saves boolean value
+                boolean isChecked = checkedRadioButton.isChecked();
+                //if radio button that has changed state is checked
+                if (isChecked){
+                    Toast.makeText(getActivity(), "An Alignment Radio Button has changed", Toast.LENGTH_SHORT).show();
+                    ///do something here!!!!!
+                }
+            }
+        });
+
+        rGaugeGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener()
+        {
+            public void onCheckedChanged(RadioGroup rGroup, int checkedID)
+            {
+                //The radio button that has changed state
+                RadioButton checkedRadioButton = (RadioButton)rGroup.findViewById(checkedID);
+                //saves boolean value
+                boolean isChecked = checkedRadioButton.isChecked();
+                //if radio button that has changed state is checked
+                if (isChecked){
+                    Toast.makeText(getActivity(), "A Gauge Radio Button has changed", Toast.LENGTH_SHORT).show();
+                    ///do something here!!!!!
+                }
+            }
+        });
+        rCrossLevelGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener()
+        {
+            public void onCheckedChanged(RadioGroup rGroup, int checkedID)
+            {
+                //The radio button that has changed state
+                RadioButton checkedRadioButton = (RadioButton)rGroup.findViewById(checkedID);
+                //saves boolean value
+                boolean isChecked = checkedRadioButton.isChecked();
+                //if radio button that has changed state is checked
+                if (isChecked){
+                    Toast.makeText(getActivity(), "A Crosslevel Radio Button has changed", Toast.LENGTH_SHORT).show();
+                    ///do something here!!!!!
+                }
+            }
+        });
+
+
+
+
+A custom class:
+
+
+
+/**
+ * Created by Max Mattoon on 3/22/15.
+ */
+public class GRadioGroup {
+
+    List<RadioButton> radios = new ArrayList<RadioButton>();
+
+    // Constructor for one RadioButton instance
+
+    public GRadioGroup(RadioButton... radios){
+        super();
+        for (RadioButton rb: radios){
+            this.radios.add(rb);
+            rb.setOnClickListener(onClick);
+        }
+    }
+
+
+    //Constructor for multiple RadioButton instances
+
+    public GRadioGroup (View activity, int... radiosIDs) {
+
+        super();
+
+        for (int radioButtonID : radiosIDs) {
+
+            RadioButton rb = (RadioButton) activity.findViewById(radioButtonID);
+            if (rb != null) {
+                this.radios.add(rb);
+                rb.setOnClickListener(onClick);
+
+            }
+        }
+
+    }
+
+
+    //every time one of the radio buttons is selected, it deselects the others in the group
+
+    View.OnClickListener onClick = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            //deselect
+            for (RadioButton rb : radios) {
+                ViewParent p = rb.getParent();
+                if (p.getClass().equals(RadioGroup.class)) {
+                    //if RadioButton belongs to RadioGroup, deselect all radios in it
+                    RadioGroup rg = (RadioGroup) p;
+                    rg.clearCheck();
+                } else {
+                    //if RadioButton does not belong to RadioGroup, deselect it
+                    rb.setChecked(false);
+
+                }
+            }
+
+            // select currently clicked radio button
+            if (v.getClass().equals(RadioButton.class)) {
+                RadioButton rb = (RadioButton) v;
+                rb.setChecked(true);
+            }
+        }
+
+    };
+
+    }
+
+
+
+
+
